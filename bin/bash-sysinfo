@@ -6,7 +6,23 @@
 # Copyright (c) 2023 LRDN <git@lrdn.net>
 # Released under the MIT license
 
+function install_sysinfo() {
+	if (( EUID != 0 )); then
+		echo "Error: Root privileges are required"
+		exit 1
+	fi
+}
+
+function print_sysinfo() {
+	cat <<- EOF
+	EOF
+}
+
 function sysinfo() {
+	case "${1}" in
+		(install) install_sysinfo;;
+		(*) print_sysinfo;;
+	esac
 }
 
 sysinfo "$@"
