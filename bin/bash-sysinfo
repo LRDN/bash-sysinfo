@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+#
+# System Information Script v1.0.0
+# https://github.com/lrdn/bash-sysinfo
+#
+# Copyright (c) 2023 LRDN <git@lrdn.net>
+# Released under the MIT license
+
+function sysinfo() {
+}
+
+sysinfo "$@"
+exit 0
