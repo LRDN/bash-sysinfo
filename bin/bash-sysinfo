@@ -6,6 +6,29 @@
 # Copyright (c) 2023 LRDN <git@lrdn.net>
 # Released under the MIT license
 
+function get_os_release() {
+	local release_name="$(</etc/os-release)"
+	local release_kernel="$(</proc/sys/kernel/osrelease)"
+
+	if [[ "${release_name}" =~ PRETTY_NAME\=\"([^\"]+)\" ]]; then
+		release_name="${BASH_REMATCH[1]}"
+	fi
+
+	echo "${release_name} (${release_kernel})"
+}
+
+function get_system_uptime() {
+	local uptime="$(</proc/uptime)"
+	local uptime_date="$(date +%Y/%m/%d\ %H:%M -d @$(($(date +%s) - ${uptime%%.*})))"
+	local uptime_days="$((${uptime%%.*} / 60 / 60 / 24)) day"
+
+	if [[ ! "${uptime_days}" =~ ^1[[:blank:]] ]]; then
+		uptime_days+="s"
+	fi
+
+	echo "${uptime_date} (${uptime_days})"
+}
+
 function install_sysinfo() {
 	if (( EUID != 0 )); then
 		echo "Error: Root privileges are required"
@@ -14,7 +37,18 @@ function install_sysinfo() {
 }
 
 function print_sysinfo() {
+	local hostname="$(hostname -f)"
+	local os_release="$(get_os_release)"
+	local system_uptime="$(get_system_uptime)"
+
 	cat <<- EOF
+
+	  ${hostname}
+	  ${hostname//[[:print:]]/-}
+
+	  ${os_release}
+	  Running since ${system_uptime}
+
 	EOF
 }
 
