@@ -6,6 +6,10 @@
 # Copyright (c) 2023 LRDN <git@lrdn.net>
 # Released under the MIT license
 
+function format_bytes() {
+	echo $(numfmt --to=iec --suffix=B --from-unit=1024 "${1}")
+}
+
 function get_os_release() {
 	local release_name="$(</etc/os-release)"
 	local release_kernel="$(</proc/sys/kernel/osrelease)"
@@ -29,6 +33,28 @@ function get_system_uptime() {
 	echo "${uptime_date} (${uptime_days})"
 }
 
+function get_memory_usage() {
+	local memory_info="$(</proc/meminfo)"
+	local memory_values=(0 0)
+	local memory_patterns=()
+
+	case "${1}" in
+		(memory) memory_patterns=("MemTotal" "MemAvailable");;
+		(swap) memory_patterns=("SwapTotal" "SwapFree");;
+	esac
+
+	for index in "${!memory_patterns[@]}"; do
+		if [[ "${memory_info}" =~ ${memory_patterns[$index]}:[[:blank:]]*([0-9]+) ]]; then
+			memory_values[$index]="${BASH_REMATCH[1]}"
+		fi
+	done
+
+	local memory_usage=$((${memory_values[0]} - ${memory_values[1]}))
+	local memory_usage_pct=$((100 * ${memory_usage} / ${memory_values[0]}))
+
+	echo "${memory_usage_pct}% of $(format_bytes ${memory_values[0]}) ($(format_bytes ${memory_usage}))"
+}
+
 function install_sysinfo() {
 	if (( EUID != 0 )); then
 		echo "Error: Root privileges are required"
@@ -40,6 +66,9 @@ function print_sysinfo() {
 	local hostname="$(hostname -f)"
 	local os_release="$(get_os_release)"
 	local system_uptime="$(get_system_uptime)"
+	local load_average=($(</proc/loadavg))
+	local memory_usage="$(get_memory_usage memory)"
+	local swap_usage="$(get_memory_usage swap)"
 
 	cat <<- EOF
 
@@ -48,6 +77,10 @@ function print_sysinfo() {
 
 	  ${os_release}
 	  Running since ${system_uptime}
+
+	  System load   ${load_average[@]:0:3}
+	  Memory usage  ${memory_usage}
+	  Swap usage    ${swap_usage}
 
 	EOF
 }
