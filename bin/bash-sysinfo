@@ -55,6 +55,25 @@ function get_memory_usage() {
 	echo "${memory_usage_pct}% of $(format_bytes ${memory_values[0]}) ($(format_bytes ${memory_usage}))"
 }
 
+function get_disk_usage() {
+	local disk_info="$(df -kP)"
+	local disk_usage=""
+
+	while read -r disk; do
+		disk=(${disk})
+
+		if [[ "${disk[0]}" =~ ^/ && "${disk[1]}" -gt 0 ]]; then
+			if [[ -n "${disk_usage}" ]]; then
+				disk_usage+=$'\n'"$(printf '%16s')"
+			fi
+
+			disk_usage+="${disk[4]} of $(format_bytes ${disk[1]}) ($(format_bytes ${disk[2]})) at ${disk[5]}"
+		fi
+	done <<< "${disk_info}"
+
+	echo "${disk_usage}"
+}
+
 function install_sysinfo() {
 	if (( EUID != 0 )); then
 		echo "Error: Root privileges are required"
@@ -69,6 +88,7 @@ function print_sysinfo() {
 	local load_average=($(</proc/loadavg))
 	local memory_usage="$(get_memory_usage memory)"
 	local swap_usage="$(get_memory_usage swap)"
+	local disk_usage="$(get_disk_usage)"
 
 	cat <<- EOF
 
@@ -81,6 +101,8 @@ function print_sysinfo() {
 	  System load   ${load_average[@]:0:3}
 	  Memory usage  ${memory_usage}
 	  Swap usage    ${swap_usage}
+
+	  Disk usage    ${disk_usage}
 
 	EOF
 }
