@@ -74,6 +74,20 @@ function get_disk_usage() {
 	echo "${disk_usage}"
 }
 
+function get_update_count() {
+	local update_count="0 0"
+
+	if [[ -r /tmp/bash-sysinfo-apt-check ]]; then
+		local apt_check="$(</tmp/bash-sysinfo-apt-check)"
+
+		if [[ "${apt_check}" =~ ^[0-9]+\;[0-9]+$ ]]; then
+			update_count="${apt_check%%;*} ${apt_check##*;}"
+		fi
+	fi
+
+	echo "${update_count}"
+}
+
 function install_sysinfo() {
 	if (( EUID != 0 )); then
 		echo "Error: Root privileges are required"
@@ -89,6 +103,7 @@ function print_sysinfo() {
 	local memory_usage="$(get_memory_usage memory)"
 	local swap_usage="$(get_memory_usage swap)"
 	local disk_usage="$(get_disk_usage)"
+	local update_count=($(get_update_count))
 
 	cat <<- EOF
 
@@ -103,6 +118,9 @@ function print_sysinfo() {
 	  Swap usage    ${swap_usage}
 
 	  Disk usage    ${disk_usage}
+
+	  ${update_count[0]} packages can be updated
+	  ${update_count[1]} updates are security updates
 
 	EOF
 }
