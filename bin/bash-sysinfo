@@ -108,6 +108,18 @@ function install_sysinfo() {
 		echo "Error: Root privileges are required"
 		exit 1
 	fi
+
+	cat <<- EOF > /etc/cron.d/bash-sysinfo
+		0 */6 * * * root /usr/lib/update-notifier/apt-check 2> /tmp/bash-sysinfo-apt-check
+	EOF
+
+	cat <<- EOF > /etc/update-motd.d/00-bash-sysinfo
+		#!/usr/bin/env bash
+		bash-sysinfo
+	EOF
+
+	chmod -x /etc/update-motd.d/*
+	chmod +x /etc/update-motd.d/00-bash-sysinfo
 }
 
 function print_sysinfo() {
