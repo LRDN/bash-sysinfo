@@ -7,7 +7,7 @@
 # Released under the MIT license
 
 function format_bytes() {
-	echo $(numfmt --to=iec --suffix=B --from-unit=1024 "${1}")
+	echo "$(numfmt --to=iec --suffix=B --from-unit=1024 ${1})"
 }
 
 function get_os_release() {
@@ -88,6 +88,21 @@ function get_update_count() {
 	echo "${update_count}"
 }
 
+function get_restart_status() {
+	local restart_status=""
+
+	if [[ -r /var/run/reboot-required ]]; then
+		restart_status="System restart is required"
+
+		if [[ -r /var/run/reboot-required.pkgs ]]; then
+			local restart_status_pkgs=($(wc -l /var/run/reboot-required.pkgs))
+			restart_status="${restart_status} (${restart_status_pkgs[0]})"
+		fi
+	fi
+
+	echo "${restart_status}"
+}
+
 function install_sysinfo() {
 	if (( EUID != 0 )); then
 		echo "Error: Root privileges are required"
@@ -104,6 +119,7 @@ function print_sysinfo() {
 	local swap_usage="$(get_memory_usage swap)"
 	local disk_usage="$(get_disk_usage)"
 	local update_count=($(get_update_count))
+	local restart_status="$(get_restart_status)"
 
 	cat <<- EOF
 
@@ -123,6 +139,10 @@ function print_sysinfo() {
 	  ${update_count[1]} updates are security updates
 
 	EOF
+
+	if [[ -n "${restart_status}" ]]; then
+		printf "%2s\e[33m${restart_status}\e[0m\n\n"
+	fi
 }
 
 function sysinfo() {
